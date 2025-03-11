@@ -4,7 +4,7 @@ import os
 import requests
 from aiogram import types
 from aiogram.types import FSInputFile
-from gemini import analyze_text
+from huggingface import analyze_text  # Assuming huggingface.py is the updated file
 
 logger = logging.getLogger(__name__)
 prompt_queue = []
@@ -21,12 +21,12 @@ async def process_queue():
         
         # Notify the user that the text is being sent for analysis
         await message.answer("Отправка текста на анализ...")
-        
+
         try:
-            # Analyze the text
-            logger.info("Sending text to Gemini API for analysis")
+            # Analyze the text using Hugging Face API
+            logger.info("Sending text to Hugging Face API for analysis")
             analysis_result = await asyncio.to_thread(analyze_text, text)
-            logger.info("Received response from Gemini API")
+            logger.info("Received response from Hugging Face API")
             
             # Save the OCR result to a file and send it to the user
             logger.info("Saving OCR result to a file")

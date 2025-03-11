@@ -35,8 +35,9 @@ async def handle_document(message: types.Message, bot: Bot):
         return
 
     await message.answer(f"Файл {file_name} загружается...")
-    await process_file(bot, message, document)
     await message.answer(f"Файл {file_name} успешно загружен.")
+    await process_file(bot, message, document)
+   
 
 def register_handlers(dp: Dispatcher, bot: Bot):
     dp.message.register(start, Command('start'))

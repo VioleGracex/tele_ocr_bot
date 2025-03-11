@@ -37,3 +37,24 @@ async def process_file(bot: Bot, message: types.Message, document: types.Documen
 
         # Queue the recognized text for analysis
         await queue_for_analysis(message, text)
+
+async def process_image_message(bot: Bot, message: types.Message, photo: types.PhotoSize):
+    logger.info("Starting image download")
+    
+    # Create a temporary directory
+    with tempfile.TemporaryDirectory() as temp_dir:
+        file_path = os.path.join(temp_dir, "image.jpg")
+        
+        file_info = await bot.get_file(photo.file_id)
+        await bot.download_file(file_info.file_path, file_path)
+        
+        logger.info(f"Image downloaded: {file_path}")
+
+        # Process the image
+        text = process_image(file_path)
+
+        # Log progress
+        logger.info("Image processed for OCR")
+
+        # Queue the recognized text for analysis
+        await queue_for_analysis(message, text)
