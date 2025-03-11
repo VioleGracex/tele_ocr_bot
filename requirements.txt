@@ -1,0 +1,8 @@
+aiogram
+pytesseract
+pdf2image
+Pillow
+python-telegram-bot
+requests
+python-dotenv
+anyio==4.8.0
