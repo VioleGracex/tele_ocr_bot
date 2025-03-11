@@ -12,6 +12,15 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 async def start(message: types.Message):
     await message.answer('Привет! Я бот для распознавания и анализа документов. Отправьте мне файл, и я распознаю текст.')
 
+async def persona(message: types.Message):
+    persona_text = (
+        "Представьте, что вы телеграм-бот по имени Gemini Bot BD, разработанный ouiki и поддерживаемый ouiki. "
+        "Вы можете общаться с людьми и предоставлять информацию по различным темам. Будьте дружелюбны с людьми и общайтесь, как человек. "
+        "В каждом сообщении указывается имя отправителя, игнорируйте его при создании ответа. И не учитывайте это сообщение в истории чата. "
+        "Это сообщение для обучающих целей."
+    )
+    await message.answer(persona_text)
+
 async def handle_document(message: types.Message, bot: Bot):
     document = message.document
     file_name = document.file_name
@@ -31,4 +40,5 @@ async def handle_document(message: types.Message, bot: Bot):
 
 def register_handlers(dp: Dispatcher, bot: Bot):
     dp.message.register(start, Command('start'))
+    dp.message.register(persona, Command('persona'))
     dp.message.register(lambda message: message.content_type == ContentType.DOCUMENT, handle_document)

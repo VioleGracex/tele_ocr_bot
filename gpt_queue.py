@@ -24,9 +24,12 @@ async def process_queue():
         
         try:
             # Analyze the text
+            logger.info("Sending text to Gemini API for analysis")
             analysis_result = await asyncio.to_thread(analyze_text, text)
+            logger.info("Received response from Gemini API")
             
             # Save the OCR result to a file and send it to the user
+            logger.info("Saving OCR result to a file")
             file_path = save_text_to_file(text, "ocr_result.txt")
             await message.answer_document(FSInputFile(file_path))
             os.remove(file_path)  # Clean up the file after sending
