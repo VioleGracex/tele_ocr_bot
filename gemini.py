@@ -13,9 +13,11 @@ def analyze_text(text):
         'Content-Type': 'application/json',
     }
     data = {
-        'contents': [{
-            'parts': [{'text': text}]
-        }]
+        "input": {
+            "contents": [{
+                "parts": [{"text": text}]
+            }]
+        }
     }
 
     response = requests.post(GEMINI_API_URL, headers=headers, json=data)

@@ -3,7 +3,7 @@ import asyncio
 import os
 import requests
 from aiogram import types
-from aiogram.types import InputFile
+from aiogram.types import FSInputFile
 from gemini import analyze_text
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ async def process_queue():
             
             # Save the OCR result to a file and send it to the user
             file_path = save_text_to_file(text, "ocr_result.txt")
-            await message.answer_document(types.FSInputFile(file_path))
+            await message.answer_document(FSInputFile(file_path))
             os.remove(file_path)  # Clean up the file after sending
             
             # Send the analysis result to the user
