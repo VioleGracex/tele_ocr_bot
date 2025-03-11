@@ -15,7 +15,7 @@ def analyze_text(text):
     }
     data = {
         'text': text,
-        'model': 'gpt-4',  # Adjust the model as needed
+        'model': 'gpt-3',  # Adjust the model as needed
         'language': 'ru'  # Specify the language as Russian
     }
 
