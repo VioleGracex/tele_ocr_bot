@@ -4,47 +4,48 @@ import fitz  # PyMuPDF
 import os
 import docx
 import time
+import asyncio
 
 logger = logging.getLogger(__name__)
 
 # Initialize the easyocr reader
 reader = easyocr.Reader(['en', 'ru'])  # Specify the languages you want to use
 
-def process_image(file_path):
+async def process_image(file_path):
     logger.info(f"Starting OCR for image: {file_path}")
-    results = reader.readtext(file_path)
+    results = await asyncio.to_thread(reader.readtext, file_path)
     text = '\n'.join([text for (bbox, text, prob) in results])
     logger.info(f"OCR completed for image: {file_path}")
     return text
 
-def process_pdf(file_path):
+async def process_pdf(file_path):
     logger.info(f"Starting OCR for PDF: {file_path}")
     text = []
 
     # Open the PDF file
-    document = fitz.open(file_path)
+    document = await asyncio.to_thread(fitz.open, file_path)
 
     for page_num in range(len(document)):
         # Get the page
-        page = document.load_page(page_num)
+        page = await asyncio.to_thread(document.load_page, page_num)
         # Convert the page to an image
-        pix = page.get_pixmap()
+        pix = await asyncio.to_thread(page.get_pixmap)
         img_path = f"{file_path}_page_{page_num}.png"
-        pix.save(img_path)
+        await asyncio.to_thread(pix.save, img_path)
         
         # Perform OCR on the image
-        page_text = reader.readtext(img_path, detail=0)
+        page_text = await asyncio.to_thread(reader.readtext, img_path, detail=0)
         text.extend(page_text)
         
         # Remove the image file after processing
-        remove_file_with_retry(img_path)
+        await asyncio.to_thread(remove_file_with_retry, img_path)
     
     logger.info(f"OCR completed for PDF: {file_path}")
     return '\n'.join(text)
 
-def process_docx(file_path):
+async def process_docx(file_path):
     logger.info(f"Starting OCR for DOCX: {file_path}")
-    doc = docx.Document(file_path)
+    doc = await asyncio.to_thread(docx.Document, file_path)
     text = ''
     for paragraph in doc.paragraphs:
         text += paragraph.text + '\n'

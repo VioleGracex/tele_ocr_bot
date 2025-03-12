@@ -1,3 +1,4 @@
+"""gpt_queue.py"""
 import logging
 import asyncio
 import os
