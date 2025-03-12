@@ -1,6 +1,7 @@
 import logging
 import os
 import tempfile
+import shutil
 from aiogram import Bot, types
 from ocr import process_image, process_pdf, process_docx
 from gpt_queue import queue_for_analysis
@@ -11,14 +12,14 @@ logger = logging.getLogger(__name__)
 async def process_file(bot: Bot, message: types.Message, document: types.Document):
     file_name = document.file_name
     logger.info(f"Начало загрузки файла: {file_name}")
-    
+
     # Создание временного каталога
     with tempfile.TemporaryDirectory() as temp_dir:
         file_path = os.path.join(temp_dir, file_name)
-        
+
         file_info = await bot.get_file(document.file_id)
         await bot.download_file(file_info.file_path, file_path)
-        
+
         logger.info(f"Файл загружен: {file_path}")
 
         # Обработка файла в зависимости от его типа
@@ -36,8 +37,19 @@ async def process_file(bot: Bot, message: types.Message, document: types.Documen
         # Логирование прогресса
         logger.info(f"Файл обработан для OCR: {file_name}")
 
+        # Создание копии распознанного текста для анализа
+        ocr_result_path = os.path.join(temp_dir, f"{file_name}_ocr_result.txt")
+        with open(ocr_result_path, 'w', encoding='utf-8') as f:
+            f.write(text)
+
         # Постановка распознанного текста в очередь на анализ
         await queue_for_analysis(message, text)
+
+        # Ensure proper cleanup of temporary files
+        safe_remove(ocr_result_path)
+
+    # Ensure proper cleanup of temporary files
+    safe_remove(file_path)
 
 async def process_image_message(bot: Bot, message: types.Message, photo: types.PhotoSize):
     if photo is None:
@@ -45,14 +57,14 @@ async def process_image_message(bot: Bot, message: types.Message, photo: types.P
         return
 
     logger.info("Начало загрузки изображения")
-    
+
     # Создание временного каталога
     with tempfile.TemporaryDirectory() as temp_dir:
         file_path = os.path.join(temp_dir, "image.jpg")
-        
+
         file_info = await bot.get_file(photo.file_id)
         await bot.download_file(file_info.file_path, file_path)
-        
+
         logger.info(f"Изображение загружено: {file_path}")
 
         # Обработка изображения
@@ -61,10 +73,20 @@ async def process_image_message(bot: Bot, message: types.Message, photo: types.P
         # Логирование прогресса
         logger.info("Изображение обработано для OCR")
 
+        # Создание копии распознанного текста для анализа
+        ocr_result_path = os.path.join(temp_dir, "image_ocr_result.txt")
+        with open(ocr_result_path, 'w', encoding='utf-8') as f:
+            f.write(text)
+
         # Постановка распознанного текста в очередь на анализ
         await queue_for_analysis(message, text)
 
-# Ensure proper cleanup of temporary files.
+        # Ensure proper cleanup of temporary files
+        safe_remove(ocr_result_path)
+
+    # Ensure proper cleanup of temporary files
+    safe_remove(file_path)
+
 def safe_remove(file_path):
     try:
         os.remove(file_path)

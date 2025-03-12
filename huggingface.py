@@ -29,7 +29,7 @@ def analyze_text(text):
         "inputs": f"{PERSONA_PROMPT}\n\n{text}"  # Including the persona prompt
     }
 
-    logger.info("Отправка текста в Hugging Face API для анализа")
+    logger.info("Отправка текста в Hugging Face API для анализа / send to gpt")
     response = requests.post(HUGGINGFACE_API_URL, headers=headers, json=data)
 
     if response.status_code == 200:

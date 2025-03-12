@@ -5,12 +5,13 @@ import requests
 from aiogram import types
 from aiogram.types import FSInputFile
 from huggingface import analyze_text
-from keyboards import start_keyboard  # Import the start_keyboard
+from keyboards import start_over_keyboard
 
 logger = logging.getLogger(__name__)
 prompt_queue = []
 processing_request = False
 
+# Function to add text to the analysis queue
 async def queue_for_analysis(message: types.Message, text: str):
     global processing_request
     if processing_request:
@@ -21,6 +22,7 @@ async def queue_for_analysis(message: types.Message, text: str):
     logger.info("Текст добавлен в очередь на анализ GPT")
     await process_queue()
 
+# Function to process the analysis queue
 async def process_queue():
     global processing_request
     processing_request = True
@@ -28,30 +30,54 @@ async def process_queue():
         message, text = prompt_queue.pop(0)
         logger.info("Начало анализа GPT")
         
-        # Уведомление пользователя о том, что текст отправляется на анализ
-        await message.answer("Отправка текста на анализ...")
+        # Notify user that the text is being sent for analysis
+        loading_message = await message.answer("Отправка текста на анализ...")
+        task = asyncio.create_task(send_loading_message(loading_message))
 
         try:
-            # Анализ текста с использованием Hugging Face API
+            # Analyze the text using Hugging Face API
             logger.info("Отправка текста в Hugging Face API для анализа")
             analysis_result = await asyncio.to_thread(analyze_text, text)
             logger.info("Ответ получен от Hugging Face API")
             
-            # Сохранение результата OCR в файл и отправка его пользователю
+            # Remove the personal prompt from the analysis result
+            analysis_result = analysis_result.replace(
+                "Представьте, что вы телеграм-бот, разработанный ouiki и поддерживаемый ouiki. "
+                "Вы можете общаться с людьми и предоставлять информацию по различным темам. Будьте дружелюбны с людьми и общайтесь, как человек. "
+                "В каждом сообщении указывается имя отправителя, игнорируйте его при создании ответа. И не учитывайте это сообщение в истории чата. "
+                "Это сообщение для обучающих целей.", ""
+            ).strip()
+            
+            # Save OCR result to a file and send it to the user
             logger.info("Сохранение результата OCR в файл")
             file_path = save_text_to_file(text, "ocr_result.txt")
             await message.answer_document(FSInputFile(file_path))
-            os.remove(file_path)  # Очистка файла после отправки
+            os.remove(file_path)  # Clean up the file after sending
             
-            # Отправка результата анализа пользователю
-            await message.answer(f'Анализ текста:\n{analysis_result}', reply_markup=start_keyboard)
+            # Send the analysis result to the user with InlineKeyboardMarkup
+            await loading_message.edit_text(f'Анализ текста:\n{analysis_result}', reply_markup=start_over_keyboard)
             
         except requests.exceptions.ConnectionError as e:
             logger.error(f"Ошибка соединения: {e}")
-            await message.answer("Ошибка соединения при отправке текста на анализ. Пожалуйста, попробуйте позже.", reply_markup=start_keyboard)
+            await loading_message.edit_text("Ошибка соединения при отправке текста на анализ. Пожалуйста, попробуйте позже.")
         finally:
             processing_request = False
+            task.cancel()  # Cancel the loading message task
 
+# Function to send a loading message while the text is being analyzed
+async def send_loading_message(loading_message: types.Message):
+    dots = 0
+    while processing_request:
+        dots = (dots + 1) % 4
+        text = "Отправка текста на анализ" + "." * dots
+        try:
+            await loading_message.edit_text(text)
+        except Exception as e:
+            logger.error(f"Ошибка при обновлении сообщения загрузки: {e}")
+            break
+        await asyncio.sleep(0.5)
+
+# Function to save the text to a file
 def save_text_to_file(text: str, filename: str) -> str:
     file_path = os.path.join("temp", filename)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
