@@ -1,4 +1,3 @@
-""" keyboards.py """
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
 # Define the start keyboard with ReplyKeyboardMarkup

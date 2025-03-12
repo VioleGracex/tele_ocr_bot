@@ -3,9 +3,9 @@ from aiogram import Dispatcher, types
 from aiogram.filters import Command
 from aiogram import Bot
 from aiogram.types import ContentType
-from file_processing import process_file, process_image_message  # Updated import
-from keyboards import start_keyboard, cancel_keyboard, modes_keyboard  # Updated import
-from shared import processing_request  # Import the shared variable
+from file_processing import process_file, process_image_message
+from keyboards import start_keyboard, cancel_keyboard, modes_keyboard, start_over_keyboard
+from shared import processing_request
 
 logger = logging.getLogger(__name__)
 
@@ -125,3 +125,9 @@ def register_handlers(dp: Dispatcher, bot: Bot):
     dp.callback_query.register(set_mode_ocr_and_gpt, lambda call: call.data == "set_mode_ocr_and_gpt")
     dp.message.register(handle_document, lambda message: message.content_type == ContentType.DOCUMENT)
     dp.message.register(handle_photo, lambda message: message.content_type == ContentType.PHOTO)
+
+async def start_over_handler(callback_query: types.CallbackQuery):
+    await start(callback_query.message)
+
+def register_start_over_handler(dp: Dispatcher):
+    dp.callback_query.register(start_over_handler, lambda call: call.data == "start")
