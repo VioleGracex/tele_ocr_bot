@@ -5,6 +5,7 @@ from aiogram import Bot
 from aiogram.types import ContentType
 from file_processing import process_file, process_image_message
 from keyboards import start_keyboard, cancel_keyboard
+from shared import processing_request  # Import the shared variable
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,13 @@ async def faq_and_help(message: types.Message):
     await message.answer(help_text)
 
 async def cancel_request(message: types.Message):
-    await message.answer("Запрос отменен.", reply_markup=start_keyboard)
+    global processing_request
+    if not processing_request:
+        await message.answer("Нет активных запросов для отмены.", reply_markup=start_keyboard)
+    else:
+        # Logic to cancel the request if necessary
+        await message.answer("Запрос отменен.", reply_markup=start_keyboard)
+        processing_request = False  # Reset the processing request flag
 
 async def start_analysis(message: types.Message):
     await message.answer("Отправьте файл для анализа.")

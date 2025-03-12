@@ -5,11 +5,12 @@ import requests
 from aiogram import types
 from aiogram.types import FSInputFile
 from huggingface import analyze_text
-from keyboards import start_over_keyboard
+from aiogram.exceptions import TelegramBadRequest  # Import the exception for handling Telegram errors
+from keyboards import start_over_keyboard, start_keyboard, cancel_keyboard
+from shared import processing_request  # Import the shared variable
 
 logger = logging.getLogger(__name__)
 prompt_queue = []
-processing_request = False
 
 # Function to add text to the analysis queue
 async def queue_for_analysis(message: types.Message, text: str):
@@ -31,7 +32,7 @@ async def process_queue():
         logger.info("Начало анализа GPT")
         
         # Notify user that the text is being sent for analysis
-        loading_message = await message.answer("Отправка текста на анализ...")
+        loading_message = await message.answer("Отправка текста на анализ...", reply_markup=cancel_keyboard)
         task = asyncio.create_task(send_loading_message(loading_message))
 
         try:
@@ -55,11 +56,18 @@ async def process_queue():
             os.remove(file_path)  # Clean up the file after sending
             
             # Send the analysis result to the user with InlineKeyboardMarkup
-            await loading_message.edit_text(f'Анализ текста:\n{analysis_result}', reply_markup=start_over_keyboard)
+            try:
+                await loading_message.edit_text(f'Анализ текста:\n{analysis_result}', reply_markup=start_over_keyboard)
+            except TelegramBadRequest:
+                # If the message cannot be edited, send a new message instead
+                await message.answer(f'Анализ текста:\n{analysis_result}', reply_markup=start_over_keyboard)
             
         except requests.exceptions.ConnectionError as e:
             logger.error(f"Ошибка соединения: {e}")
-            await loading_message.edit_text("Ошибка соединения при отправке текста на анализ. Пожалуйста, попробуйте позже.")
+            await loading_message.edit_text("Ошибка соединения при отправке текста на анализ. Пожалуйста, попробуйте позже.", reply_markup=start_keyboard)
+        except Exception as e:
+            logger.error(f"Ошибка: {e}")
+            await loading_message.edit_text("Произошла ошибка при обработке текста. Пожалуйста, попробуйте позже.", reply_markup=start_keyboard)
         finally:
             processing_request = False
             task.cancel()  # Cancel the loading message task
